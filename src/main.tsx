@@ -5,45 +5,53 @@ import Phaser from 'phaser'
 import ReactDOM from 'react-dom'
 import Debugger from './debugger'
 import React from 'react'
+import { CreatureFactory, Goblin } from './creatures'
+import { AnimationName, AssetKeys, AtlasKey, CreateAnimation, Creatures } from './types'
 
-const mainSceneSettings: Phaser.Types.Scenes.SettingsConfig = {
-
-}
 
 // TODO -- Delete test code
-let test: Creature;
+let test: Goblin;
 let txt: Phaser.GameObjects.Text;
 
-class Creature {
-  sprite: Phaser.GameObjects.Sprite;
-  constructor(sprite: Phaser.GameObjects.Sprite) {
-    this.sprite = sprite;
-  }
-  update(time: number) {
-      const bobble_t = Math.sin(time*6);
-      this.sprite.angle = bobble_t*7;
-      this.sprite.y = Math.sin(time*16)*15+200;
-      this.sprite.x += 2;
-      this.sprite.x %= 800;
-  }
-}
+const atlasKey: AtlasKey = AssetKeys.atlas
 
+/**
+ * The top level scene for our game state. 
+ * This is where we add our sprites and handle player input (for now?)
+ */
 class RootGame extends Phaser.Scene {
   constructor() {
+    const mainSceneSettings: Phaser.Types.Scenes.SettingsConfig = {}
     super(mainSceneSettings);
   }
 
+  /**
+   * Preloads the game assets for the game.
+   */
   preload() {
-    this.load.atlas('tiles', textureAtlas, atlasJSON);
-    this.textures.get('tiles').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.load.atlas(atlasKey, textureAtlas, atlasJSON);
+    this.textures.get(atlasKey).setFilter(Phaser.Textures.FilterMode.NEAREST);
   }
 
   create() {
-    this.anims.create({ key: 'goblin_idle_anim', frames: this.anims.generateFrameNames('tiles', { prefix: 'goblin_idle_anim', start: 0, end: 3 }), frameRate: 8, repeat: -1 });
-    this.anims.create({ key: 'goblin_run_anim', frames: this.anims.generateFrameNames('tiles', { prefix: 'goblin_run_anim', start: 0, end: 3 }), frameRate: 8, repeat: -1 });
-    this.add.sprite(100, 100, 'tiles').play("goblin_idle_anim").setScale(10);
+    // Load up animation frames
+    Object.entries(AssetKeys.anims).forEach(([creature, animStates]) => {
+      Object.entries(animStates).forEach(([animName, frames]) => {
+        const key = `${creature}_${animName}_anim`;
+        this.anims.create({
+          key,
+          frames: frames.map((frame: string) => ({
+            key: atlasKey,
+            frame: frame
+          })),
+          frameRate: 8,
+          repeat: -1
+        })
+      })
+    })
+    this.add.sprite(100, 100, atlasKey).play("goblin_idle_anim").setScale(10);
     txt = this.add.text(20, 20, "Hello World", { font: "24px Arial" });
-    test = new Creature(this.add.sprite(300, 300, 'tiles').play("goblin_run_anim").setScale(10));
+    test = new Goblin(this.add.sprite(300, 300, atlasKey).play("goblin_run_anim").setScale(10));
   }
 
   // Time and delta in ms
@@ -58,9 +66,12 @@ class RootGame extends Phaser.Scene {
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 
-window.onload = () => {
-  // Initialize Phaser game
-  new Phaser.Game({
+/**
+ * This is the starting point for execution. 
+ * The function is responsible initializing the game state for Phaser framework and rendering the debugger through React.
+ */
+function mainGame() {
+  const phaserSettings: Phaser.Types.Core.GameConfig = {
     type: Phaser.WEBGL,
     parent: "game",
     width: GAME_WIDTH,
@@ -68,9 +79,15 @@ window.onload = () => {
     scene: [RootGame],
     pixelArt: true,
     backgroundColor: "0xbbbbbb",
-  })
-  console.log(1)
+
+  };
+
+  // Initialize Phaser
+  new Phaser.Game(phaserSettings)
+
   // Render the debugger react component
-  // TODO -- Find sensible way to link game to debugger
   ReactDOM.render(<Debugger/>, document.getElementById("debugger"));
 }
+
+// run mainGame on browser load
+window.onload = mainGame
