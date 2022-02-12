@@ -7,28 +7,20 @@
 export type AtlasKey = 'tiles'
 export type Creatures = 'goblin' | 'skeleton'
 export type AnimationState = 'idle' | 'run'
-export type Animations<C extends Creatures> = {
-    [a in AnimationState]?: FrameName<C, a>
-}
-export type FrameNumber = 0 | 1 | 2 | 3
 
-export type AnimationName<C extends Creatures> = `${C}_${AnimationState}_anim`
-/**
- * Animation name and frame count for each animation.
- */
-export type CreateAnimation<C extends Creatures> = {
-    [name in AnimationName<C>]: number
-}
+export type AnimationName = `${Creatures}_${AnimationState}`
 
-export type FrameName<C extends Creatures, A extends AnimationState> = `${C}_${A}_anim${FrameNumber}`[]
 type AssetKeys = {
     atlas: AtlasKey,
     anims: {
-        [c in Creatures]: {
-            [a in AnimationState]: FrameName<c, a>
-        }
+        [c in Creatures]: AnimationSet<c> 
     }
 }
+/**
+ * Animation Set for a specific creature
+ */
+export type AnimationSet<C extends Creatures> = { [key in AnimationState]: `${C}_${key}_anim${number}`[] }
+
 export const AssetKeys: AssetKeys = {
     atlas: 'tiles',
     anims: {
@@ -43,6 +35,22 @@ export const AssetKeys: AssetKeys = {
     }
 }
 
-export function getAnim(key: Creatures): Animations<Creatures> {
-    return AssetKeys.anims[key] 
+export function loadAnims(anims: Phaser.Animations.AnimationManager) {
+    let k: Creatures
+    for (k in AssetKeys.anims) {
+        let a: AnimationState
+        for (a in AssetKeys.anims[k]) {
+            let key: AnimationName = `${k}_${a}`
+            let frames = AssetKeys.anims[k][a]
+            anims.create({
+                key,
+                frames: frames.map((frame: string) => ({
+                    key: AssetKeys.atlas,
+                    frame: frame
+                })),
+                frameRate: 8,
+                repeat: -1
+            })
+        }
+    }
 }

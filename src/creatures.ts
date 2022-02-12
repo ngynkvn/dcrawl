@@ -1,80 +1,63 @@
-import { Scene } from "phaser";
-import { AnimationName, Animations, AssetKeys, Creatures, getAnim } from "./types";
-
-export class CreatureFactory extends Phaser.GameObjects.GameObjectFactory {
-    constructor(scene: Scene) {
-        super(scene);
-    }
-    goblin() {
-        this.sprite(300, 300, AssetKeys.atlas)
-    }
-}
-/**
- * Make all properties of sprite object optional when updating.
- */
-type SpriteUpdate = Partial<Phaser.GameObjects.Sprite>;
+import { AnimationSet, AssetKeys, Creatures } from "./types";
 
 /**
- * Creatures hold a reference to a sprite and are aware of time passing within the game.
+ * Creatures are sprites aware of space and time passing within the game.
  */
-abstract class Creature {
-
+abstract class Creature<C extends Creatures> extends Phaser.GameObjects.Sprite {
+    animations?: AnimationSet<C>;
     constructor(
-        public sprite: Phaser.GameObjects.Sprite,
-        public creatureType?: Creatures,
-    ) { }
-
-    get animations(): Animations<Creatures> | undefined {
-        return this.creatureType ? getAnim(this.creatureType) : undefined
+        scene: Phaser.Scene,
+        x: number,
+        y: number,
+        key: string,
+    ) {
+        super(scene, x, y, key)
+        this.setScale(10)
+        scene.add.existing(this);
     }
 
     abstract update(time: number): void
-
-    assignSprite(other: SpriteUpdate): void {
-        this.sprite = Object.assign(this.sprite, other)
-    }
-
-    positionSprite(x: number, y: number): void {
-        this.assignSprite({ x, y })
-    }
 }
 
 
 /**
  * A low level goblin that is very weak.
  */
-export class Goblin extends Creature {
-    creatureType: Creatures = 'goblin'
+export class Goblin extends Creature<'goblin'> {
+    animations: AnimationSet<'goblin'> = AssetKeys.anims.goblin
     constructor(
-        sprite: Phaser.GameObjects.Sprite,
+        scene: Phaser.Scene,
+        x: number,
+        y: number,
+        key: string,
     ) {
-        super(sprite)
+        super(scene, x, y, key)
     }
     update(time: number) {
-        const bobble_t = Math.sin(time * 6);
-        this.assignSprite({
-            angle: bobble_t * 7,
-            y: Math.sin(time * 16) * 15 + 200,
-            x: (this.sprite.x + 2) % 800,
-        })
+        const bobble_t = Math.sin(time * 6)
+        this.angle = bobble_t * 7
+        this.y = Math.sin(time * 16) * 15 + 200
+        this.x = (this.x + 2) % 800
     }
 }
 
 /**
  * Skeletons are low level creatures
  */
-class Skeleton extends Creature {
-    creatureType: Creatures = 'skeleton'
+class Skeleton extends Creature<'skeleton'> {
+    animations: AnimationSet<'skeleton'> = AssetKeys.anims.skeleton
     constructor(
-        sprite: Phaser.GameObjects.Sprite,
+        scene: Phaser.Scene,
+        x: number,
+        y: number,
+        key: string,
     ) {
-        super(sprite)
+        super(scene, x, y, key)
     }
     update(time: number) {
-        const bobble_t = Math.sin(time * 6);
-        this.sprite.angle = bobble_t * 7;
-        this.sprite.y = Math.sin(time * 16) * 15 + 200;
-        this.sprite.x += 2;
-        this.sprite.x %= 800;
+        const bobble_t = Math.sin(time * 6)
+        this.angle = bobble_t * 7
+        this.y = Math.sin(time * 16) * 15 + 200
+        this.x = (this.x + 2) % 800
     }
 }
